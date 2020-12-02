@@ -1,5 +1,5 @@
 [package]
-name = "canvas"
+name = "wasm-bindgen-paint"
 version = "0.1.0"
 authors = ["The wasm-bindgen Developers"]
 edition = "2018"
@@ -15,8 +15,13 @@ wasm-bindgen = "0.2.69"
 version = "0.3.4"
 features = [
   'CanvasRenderingContext2d',
+  'CssStyleDeclaration',
   'Document',
   'Element',
+  'EventTarget',
   'HtmlCanvasElement',
+  'HtmlElement',
+  'MouseEvent',
+  'Node',
   'Window',
 ]
