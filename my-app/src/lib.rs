@@ -1,5 +1,4 @@
-use std::cell::Cell;
-use std::rc::Rc;
+use std::{ rc::Rc, cell::Cell };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -18,40 +17,51 @@ pub fn start() -> Result<(), JsValue> {
         .unwrap()
         .dyn_into::<web_sys::CanvasRenderingContext2d>()?;
     let context = Rc::new(context);
-    let pressed = Rc::new(Cell::new(false));
+    let dragged = Rc::new(Cell::new(false));
+
+    let x = Rc::new(Cell::new(10.0));
+    let y = Rc::new(Cell::new(10.0));
+    let point_width = 10.0;
+    let w = Rc::new(point_width);
+    context.fill_rect(x.get() - *w/2.0, y.get() - *w/2.0, *w, *w);
     {
         let context = context.clone();
-        let pressed = pressed.clone();
+        let dragged = dragged.clone();
+        let x = x.clone();
+        let y = y.clone();
+        let w = w.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
             context.begin_path();
-            context.move_to(event.offset_x() as f64, event.offset_y() as f64);
-            pressed.set(true);
+            let mouse_x = event.offset_x() as f64;
+            let mouse_y = event.offset_y() as f64;
+            if mouse_x - *w/2.0 < x.get() && x.get() <  mouse_x + *w/2.0 && mouse_y - *w/2.0 < y.get() && y.get() < mouse_y + *w/2.0 {
+                dragged.set(true);
+            }
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
     {
         let context = context.clone();
-        let pressed = pressed.clone();
+        let dragged = dragged.clone();
+        let w = w.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            if pressed.get() {
-                context.line_to(event.offset_x() as f64, event.offset_y() as f64);
-                context.stroke();
-                context.begin_path();
-                context.move_to(event.offset_x() as f64, event.offset_y() as f64);
-                // context.fill_rect(event.offset_x() as f64, event.offset_y() as f64, 100.0, 100.0);
+            if dragged.get() {
+                context.clear_rect(0.0, 0.0, 640.0, 480.0);
+                let mouse_x = event.offset_x() as f64;
+                let mouse_y = event.offset_y() as f64;
+                x.set(mouse_x);
+                y.set(mouse_y);
+                context.fill_rect(mouse_x - *w/2.0 , mouse_y - *w/2.0, *w, *w);
             }
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
     {
-        let context = context.clone();
-        let pressed = pressed.clone();
+        let dragged = dragged.clone();
         let closure = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            pressed.set(false);
-            context.line_to(event.offset_x() as f64, event.offset_y() as f64);
-            context.stroke();
+            dragged.set(false);
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mouseup", closure.as_ref().unchecked_ref())?;
         closure.forget();
