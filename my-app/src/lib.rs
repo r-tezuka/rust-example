@@ -2,6 +2,12 @@ use std::{ rc::Rc, cell::{Cell, RefCell} };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
+#[derive(Debug, Clone)]
+struct Point {
+    x: f64,
+    y: f64
+}
+
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     let canvas_w = 640.0;
@@ -23,7 +29,7 @@ pub fn start() -> Result<(), JsValue> {
     let w = 10.0; // width for point rect
     let id: Option<usize> = None; // index of dragged point 
     let id = Rc::new(Cell::new(id));
-    let points = vec![[10.0, 10.0],[100.0, 30.0],[200.0, 30.0],[300.0, 10.0]];
+    let points = vec![Point{x: 10.0, y: 10.0},Point{x: 100.0, y: 30.0},Point{x: 200.0, y: 30.0},Point{x: 300.0, y: 10.0}];
     draw_bezier(points.clone(), w, context.clone());
     let points = Rc::new(RefCell::new(points));
     {
@@ -36,7 +42,7 @@ pub fn start() -> Result<(), JsValue> {
             let mouse_x = event.offset_x() as f64;
             let mouse_y = event.offset_y() as f64;
             for (i, p) in points.borrow().iter().enumerate() {
-                if mouse_x - w/2.0 < p[0] && p[0] <  mouse_x + w/2.0 && mouse_y - w/2.0 < p[1] && p[1] < mouse_y + w/2.0 {
+                if mouse_x - w/2.0 < p.x && p.x <  mouse_x + w/2.0 && mouse_y - w/2.0 < p.y && p.y < mouse_y + w/2.0 {
                     dragged.set(true);
                     id.set(Some(i));
                 }
@@ -56,7 +62,7 @@ pub fn start() -> Result<(), JsValue> {
                 let mouse_x = event.offset_x() as f64;
                 let mouse_y = event.offset_y() as f64;
                 if id.get() != None {
-                    points.borrow_mut()[id.get().unwrap()] = [mouse_x, mouse_y];
+                    points.borrow_mut()[id.get().unwrap()] = Point{x: mouse_x, y: mouse_y};
                 }
                 draw_bezier(points.borrow().to_vec(), w, context.clone());
             }
@@ -78,20 +84,26 @@ pub fn start() -> Result<(), JsValue> {
     Ok(())
 }
 
-fn draw_bezier(points: Vec<[f64; 2]>, w: f64, context: Rc<web_sys::CanvasRenderingContext2d> ) {
+fn draw_bezier(points: Vec<Point>, w: f64, context: Rc<web_sys::CanvasRenderingContext2d> ) {
+    //draw curve handles
+    draw_handle(points[0].clone(), points[1].clone(), context.clone());
+    draw_handle(points[3].clone(), points[2].clone(), context.clone());
+
+    //draw points
     for p in points.iter() {
-        context.fill_rect(p[0] - w/2.0, p[1] - w/2.0, w, w);
+        context.fill_rect(p.x - w/2.0, p.y - w/2.0, w, w);
     }
+
+    //draw bezier curve
     context.begin_path();
-    context.move_to(points[0][0],points[0][1]);
-    context.line_to(points[1][0],points[1][1]);
+    context.move_to(points[0].x,points[0].y);
+    context.bezier_curve_to(points[1].x,points[1].y,points[2].x,points[2].y,points[3].x,points[3].y);
     context.stroke();
+}
+
+fn draw_handle(from: Point, to: Point, context: Rc<web_sys::CanvasRenderingContext2d>) {
     context.begin_path();
-    context.move_to(points[0][0],points[0][1]);
-    context.bezier_curve_to(points[1][0],points[1][1],points[2][0],points[2][1],points[3][0],points[3][1]);
-    context.stroke();
-    context.begin_path();
-    context.move_to(points[3][0],points[3][1]);
-    context.line_to(points[2][0],points[2][1]);
+    context.move_to(from.x, from.y);
+    context.line_to(to.x, to.y);
     context.stroke();
 }
