@@ -29,7 +29,7 @@ pub fn start() -> Result<(), JsValue> {
     let id: Option<usize> = None; // index of dragged point 
     let id = Rc::new(Cell::new(id));
     let points = vec![Point{x: 10.0, y: 10.0},Point{x: 100.0, y: 30.0},Point{x: 200.0, y: 30.0},Point{x: 300.0, y: 10.0}];
-    draw_bezier(points.clone(), W, context.clone());
+    draw(points.clone(), W, context.clone());
     let points = Rc::new(RefCell::new(points));
     {
         let context = context.clone();
@@ -58,7 +58,7 @@ pub fn start() -> Result<(), JsValue> {
                 let mouse_x = event.offset_x() as f64;
                 let mouse_y = event.offset_y() as f64;
                 points.borrow_mut()[id.get().unwrap()] = Point{x: mouse_x, y: mouse_y};
-                draw_bezier(points.borrow().to_vec(), W, context.clone());
+                draw(points.borrow().to_vec(), W, context.clone());
             }
         }) as Box<dyn FnMut(_)>);
         canvas.add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())?;
@@ -77,7 +77,7 @@ pub fn start() -> Result<(), JsValue> {
     Ok(())
 }
 
-fn draw_bezier(points: Vec<Point>, w: f64, context: Rc<web_sys::CanvasRenderingContext2d> ) {
+fn draw(points: Vec<Point>, w: f64, context: Rc<web_sys::CanvasRenderingContext2d> ) {
     //draw curve handles
     draw_handle(points[0].clone(), points[1].clone(), context.clone());
     draw_handle(points[3].clone(), points[2].clone(), context.clone());
